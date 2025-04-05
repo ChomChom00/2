@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Rainbow Scroll Poem</title>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: Sans-serif;
+      cursor: url('https://emojicdn.elk.sh/☁'), auto;
+      overflow-x: hidden;
+    }
+    body {
+      background: white;
+      transition: background 0.5s;
+      color: rgba(0, 0, 0, 0.05);
+    }
+    .content {
+      height: 10000px;
+      padding: 20px;
+      font-size: 2rem;
+      position: relative;
+    }
+    .poem-line {
+      position: absolute;
+      width: 100%;
+      left: 0;
+      opacity: 0;
+      transition: opacity 0.5s;
+      pointer-events: none;
+      text-shadow: 0 0 8px rgba(0,0,0,0.2);
+    }
+    .visible {
+      opacity: 1 !important;
+      color: rgba(0, 0, 0, 0.85);
+    }
+    .floating-word {
+      position: absolute;
+      font-size: 1.5rem;
+      opacity: 0.6;
+      cursor: pointer;
+      transition: transform 1s linear, top 2s ease-out;
+      animation: drift 4s ease-in-out infinite;
+      z-index: 1002;
+    }
+    @keyframes drift {
+      0% { transform: translateY(0px) translateX(0px); }
+      50% { transform: translateY(-10px) translateX(5px); }
+      100% { transform: translateY(0px) translateX(0px); }
+    }
+    .fallen-word {
+      position: relative;
+      font-size: 1.1rem;
+      opacity: 1;
+      white-space: nowrap;
+    }
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 1000;
+    }
+    #cloud {
+      position: fixed;
+      top: 0;
+      left: 0;
+      font-size: 2rem;
+      pointer-events: none;
+      z-index: 1001;
+    }
+    #fallen-container {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      padding: 10px;
+      background: rgba(255,255,255,0.8);
+      font-size: 1rem;
+      z-index: 1002;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+    .clicked {
+      animation: glowFade 1.5s forwards;
+    }
+    @keyframes glowFade {
+      0% {
+        text-shadow: 0 0 5px white, 0 0 10px white;
+        opacity: 1;
+      }
+      100% {
+        text-shadow: 0 0 20px white, 0 0 40px white;
+        opacity: 0;
+      }
+    }
+    .popup-phrase {
+      position: absolute;
+      font-size: 1.2rem;
+      background: rgba(255,255,255,0.9);
+      border: 1px solid #ccc;
+      padding: 4px 8px;
+      border-radius: 6px;
+      z-index: 2000;
+      pointer-events: none;
+      animation: fadeOut 2.5s forwards;
+    }
+    @keyframes fadeOut {
+      0% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-20px); }
+    }
+    #final-line {
+      text-align: center;
+      font-size: 2rem;
+      margin-top: 200px;
+      color: black;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="cloud">☁️</div>
+  <canvas id="drawCanvas"></canvas>
+  <div id="fallen-container"></div>
+  <div class="content">
+    <div id="scroll-guide">
+      Scroll down to see the background color change like a rainbow 🌈<br>
+      And hear the silence of a disappearing poem 🎹<br><br>
+      👉 Enter to enhance text <br><br> Click and drag to draw. <br><br>Press E to toggle eraser,
+    </div>
+    <div class="poem-line" style="top: 1000px;">나는 어딘가에 남겨진 말이었다</div>
+    <div class="poem-line" style="top: 2000px;">희미한 소리로 떠다니며</div>
+    <div class="poem-line" style="top: 3000px;">누군가의 귀에 닿기를 기다렸다</div>
+    <div class="poem-line" style="top: 4000px;">종이 위에 그려진 침묵</div>
+    <div class="poem-line" style="top: 5000px;">기억은 무지개빛으로 번졌다</div>
+    <div class="poem-line" style="top: 6000px;">말들은 다시 사라지고</div>
+    <div class="poem-line" style="top: 7000px;">구름 뒤편에 숨었다</div>
+    <div class="poem-line" style="top: 8000px;">침묵만이 바람에 실려</div>
+    <div class="poem-line" style="top: 9000px;">우리 사이를 가로질렀다</div>
+    <div id="final-line">기억의 가장 끝에 닿았을 때, 우리는 비로소 말없이 연결된다</div>
+  </div>
+
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const poemLines = document.querySelectorAll('.poem-line');
+      let textOpacity = 0.05;
+      window.addEventListener('scroll', () => {
+        const scrollY = window.scrollY;
+        document.body.style.background = `hsl(${scrollY % 360}, 100%, 85%)`;
+        poemLines.forEach(line => {
+          const lineTop = parseInt(line.style.top);
+          if (scrollY > lineTop - window.innerHeight / 2 && scrollY < lineTop + window.innerHeight / 2) {
+            line.classList.add('visible');
+          } else {
+            line.classList.remove('visible');
+          }
+        });
+        const finalLine = document.getElementById('final-line');
+        if (scrollY > document.body.scrollHeight - window.innerHeight - 50) {
+          finalLine.style.display = 'block';
+        } else {
+          finalLine.style.display = 'none';
+        }
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          textOpacity = Math.min(1, textOpacity + 0.1);
+          document.body.style.color = `rgba(0, 0, 0, ${textOpacity})`;
+        }
+      });
+
+      const canvas = document.getElementById('drawCanvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+
+      let drawing = false;
+      let isEraser = false;
+
+      function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+      window.addEventListener('resize', resizeCanvas);
+
+      document.addEventListener('mousedown', () => drawing = true);
+      document.addEventListener('mouseup', () => drawing = false);
+
+      document.addEventListener('mousemove', (e) => {
+        const cloud = document.getElementById('cloud');
+        cloud.style.transform = `translate(${e.clientX + 10}px, ${e.clientY - 10}px)`;
+        if (!drawing) return;
+        ctx.fillStyle = isEraser ? 'white' : 'rgba(0, 0, 0, 0.1)';
+        ctx.beginPath();
+        ctx.arc(e.clientX, e.clientY, 5, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'e' || e.key === 'E') {
+          isEraser = !isEraser;
+        }
+      });
+
+      const words = ["기억", "조각", "바람", "어둠", "빛", "소리", "종이", "시간", "말", "침묵",
+        "걸음", "잊힘", "무지개", "발자국", "온기", "목소리", "귀", "파편", "선율", "투명"];
+
+      const phrases = [
+        "밤의 언저리에서 들려오는 속삭임",
+        "무지개 아래 감춰진 이름", 
+        "텅 빈 공간은 말이 가장 많은 장소였다",
+        "아이의 목소리는 가장 깊은 울림인 동시에 질문이었다",
+        "삭제된 말들은 오히려 더 크게 울리는 메아리였다",
+        "부서진 장난감은 또 다른 언어가 숨어 있는 장치였다",
+        "점자 위의 문장은 읽히지 않는 기호였다",
+        "접힌 종이학은 바람을 기억하는 형상이었다",
+        "필터 속 목소리는 누구의 것도 아닌 변형된 시간이었다",
+        "이 모든 것은 결국 하나의 이미지인 동시에 사라짐이었다",
+        "지워진 문장의 마지막 단어",
+        "기억은 종이보다 얇은 틈에서 자라나",
+        "말의 그림자가 빛보다 먼저 도착해",
+        "손끝에 남은 문장 하나",
+        "소리는 없지만 의미는 떠다니고",
+        "귀가 먼저 알아챈 그리움"
+      ];
+
+      const fallenContainer = document.getElementById('fallen-container');
+      const scrollHeight = document.body.scrollHeight;
+      for (let i = 0; i < 50; i++) {
+        const word = document.createElement('div');
+        word.className = 'floating-word';
+        word.textContent = words[Math.floor(Math.random() * words.length)];
+        word.style.top = `${Math.random() * (scrollHeight - 100)}px`;
+        word.style.left = `${Math.random() * window.innerWidth}px`;
+        word.style.color = `hsl(${Math.random() * 360}, 80%, 40%)`;
+        document.body.appendChild(word);
+        word.addEventListener('click', (e) => {
+          const phrase = phrases[Math.floor(Math.random() * phrases.length)];
+          const fallen = document.createElement('div');
+          fallen.className = 'fallen-word';
+          fallen.textContent = phrase;
+          fallenContainer.appendChild(fallen);
+
+          const popup = document.createElement('div');
+          popup.className = 'popup-phrase';
+          popup.textContent = phrase;
+          popup.style.top = `${e.clientY}px`;
+          popup.style.left = `${e.clientX}px`;
+          document.body.appendChild(popup);
+
+          setTimeout(() => popup.remove(), 2500);
+
+          word.classList.add('clicked');
+          setTimeout(() => word.remove(), 1500);
+        });
+      }
+    });
+  </script>
+</body>
+</html>
